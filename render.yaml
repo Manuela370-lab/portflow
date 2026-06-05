@@ -1,0 +1,49 @@
+# render.yaml - À la racine du projet
+
+services:
+  # Service Backend (API)
+  - type: web
+    name: portflow-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port 10000
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: portflow-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: API_V1_PREFIX
+        value: /api/v1
+      - key: APP_NAME
+        value: PortFlow
+
+  # Service Frontend (fichiers statiques)
+  - type: web
+    name: portflow-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: echo "Static site - no build needed"
+    staticPublishPath: .
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /pages/login.html
+    envVars:
+      - key: API_URL
+        value: https://portflow-backend.onrender.com/api/v1
+
+# Base de données PostgreSQL
+databases:
+  - name: portflow-db
+    plan: free
